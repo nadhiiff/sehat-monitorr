@@ -1,0 +1,9 @@
+PORT=3000
+DATABASE_URL=postgresql://postgres:psnCJpyrRWqdVMDBtDrZqUIDuVRleWpl@postgres.railway.internal:5432/railway
+UPLOAD_DIR=./uploads
+
+AI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+AI_API_KEY=AIzaSyAgmXqu9wXqCi0WVPexXLaINV1aETksc8Q
+
+REPORT_IMAGE_WIDTH=1080
+REPORT_IMAGE_HEIGHT=1920

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: health_report_db
+    restart: always
+    environment:
+      # PENTING: Variabel ini harus cocok dengan nilai di .env Anda!
+      POSTGRES_USER: setormonitor
+      POSTGRES_PASSWORD: tormonitorketua
+      POSTGRES_DB: health_reports
+    ports:
+      # PENTING: Mapping port lokal ke port container
+      - "5432:5432" 
+    volumes:
+      # Menyimpan data database di volume agar data persisten
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:
