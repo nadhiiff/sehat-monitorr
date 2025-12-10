@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "SETOR Health Reporting System (Monorepo for Vercel)",
     "scripts": {
-        "build": "cd FrontEnd && npm install && npm run build"
+        "build": "cd FrontEnd && npm install && npm run build && cd .. && rm -rf build && mv FrontEnd/build build"
     },
     "dependencies": {
         "axios": "^1.13.2",
