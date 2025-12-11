@@ -20,7 +20,8 @@ class AIService {
 
     async getModel() {
         // Runtime check for Env Var (safest for Serverless)
-        const runtimeKey = process.env.AI_API_KEY || this.fallbackKey;
+        // CHECK ALL POSSIBLE NAMES: Users often mix up AI_API_KEY vs GEMINI_API_KEY
+        const runtimeKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || this.fallbackKey;
         const cleanKey = runtimeKey ? runtimeKey.trim() : "";
 
         const genAI = new GoogleGenerativeAI(cleanKey);
@@ -85,16 +86,16 @@ class AIService {
             }
 
         } catch (err) {
-            console.error("Google SDK Error:", err.message);
-
+            // KEY DEBUG: Reveal the length AND prefix/suffix (safe) to prove mismatch
             const keyLength = runtimeKey ? runtimeKey.length : 0;
             const keyPrefix = runtimeKey ? runtimeKey.substring(0, 5) : "undefined";
             const keySuffix = runtimeKey ? runtimeKey.slice(-4) : "****";
 
-            throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix}...${keySuffix} (Length: ${keyLength})`);
+            const debugMsg = `AI_API_KEY: ${process.env.AI_API_KEY ? 'Set' : 'Unset'}, GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? 'Set' : 'Unset'}`;
+
+            throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix}...${keySuffix} (Length: ${keyLength}). [Env Debug: ${debugMsg}]`);
         }
     }
 }
 
 module.exports = AIService;
-
