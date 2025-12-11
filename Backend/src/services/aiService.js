@@ -16,7 +16,10 @@ class AIService {
         // PERBAIKAN: Hardcode URL untuk mengatasi 404 (Salah URL di Vercel)
         // Menggunakan model gemini-1.5-flash yang stabil
         const validUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-        const url = `${validUrl}?key=${this.apiKey}`;
+        // Trim key to remove accidental whitespace/newlines
+        const cleanKey = this.apiKey ? this.apiKey.trim() : '';
+        const url = `${validUrl}?key=${cleanKey}`;
+        console.log("DEBUG: Using URL:", validUrl);
 
         const requestSchema = {
             type: "object",
