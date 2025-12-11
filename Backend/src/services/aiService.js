@@ -26,11 +26,9 @@ class AIService {
 
         const genAI = new GoogleGenerativeAI(cleanKey);
 
-        // Return model instance with v1 forced
+        // Return model instance (Reverted to standard/default version as v1 failed)
         return genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
-        }, {
-            apiVersion: "v1"
         });
     }
 
@@ -56,8 +54,8 @@ class AIService {
         try {
             console.log("DEBUG: Preparing request with Google SDK (Runtime Init)...");
 
-            // Re-fetch key for debug log
-            runtimeKey = process.env.AI_API_KEY || this.fallbackKey;
+            // Re-fetch key for debug log (MATCHING getModel LOGIC)
+            runtimeKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || this.fallbackKey;
 
             const model = await this.getModel();
 
