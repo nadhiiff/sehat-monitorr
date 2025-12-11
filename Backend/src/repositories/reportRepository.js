@@ -34,28 +34,29 @@ class ReportRepository {
                 resolve({
                     id: newReportId,
                     ...reportData
-                } catch (err) {
-                    // Self-healing: If table missing (42P01), create it and retry
-                    if (err.code === '42P01') {
-                        console.log("Table missing. Attempting to create table and retry...");
-                        try {
-                            await this.db.initializeDatabase();
-                            // Retry the insert
-                            const res = await this.db.query(query, values);
-                            const newReportId = res.rows[0].id;
-                            resolve({ id: newReportId, ...reportData });
-                            return;
-                        } catch (retryErr) {
-                            console.error("Retry failed:", retryErr);
-                            reject(new Error(`Gagal menyimpan (Retry failed): ${retryErr.message}`));
-                            return;
-                        }
+                });
+            } catch (err) {
+                // Self-healing: If table missing (42P01), create it and retry
+                if (err.code === '42P01') {
+                    console.log("Table missing. Attempting to create table and retry...");
+                    try {
+                        await this.db.initializeDatabase();
+                        // Retry the insert
+                        const res = await this.db.query(query, values);
+                        const newReportId = res.rows[0].id;
+                        resolve({ id: newReportId, ...reportData });
+                        return;
+                    } catch (retryErr) {
+                        console.error("Retry failed:", retryErr);
+                        reject(new Error(`Gagal menyimpan (Retry failed): ${retryErr.message}`));
+                        return;
                     }
-
-                    console.error("Repository Error creating report:", err);
-                    reject(new Error(`DB ERROR: ${err.message}`));
                 }
-            });
+
+                console.error("Repository Error creating report:", err);
+                reject(new Error(`DB ERROR: ${err.message}`));
+            }
+        });
     }
 
     getById(id) {
