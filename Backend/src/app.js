@@ -21,7 +21,9 @@ function createApp() {
   app.use(cors());
 
   // Ensure database table exists
+  // Ensure database table exists
   db.initializeDatabase();
+  // Force rebuild timestamp: v2
   // ------------------------------
 
   // Serve static files from 'uploads' directory
