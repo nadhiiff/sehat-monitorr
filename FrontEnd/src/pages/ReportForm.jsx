@@ -151,9 +151,8 @@ const ReportForm = () => {
 
       } catch (err) {
         setLoadingAi(false);
-        setWoundScore("Error");
-        const detail = err.response ? `${err.response.status} ${JSON.stringify(err.response.data)}` : err.message;
-        setSubmissionError(`Debug Error: URL=${API_BASE_URL} Detail=${detail}`);
+        const errorMessage = err.response?.data?.error || "Gagal mendapatkan skor AI. Pastikan server Gemini/Backend berjalan.";
+        setSubmissionError(errorMessage);
         console.error("AI Scoring Error:", err.response?.data || err);
       }
     }
