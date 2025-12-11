@@ -43,6 +43,12 @@ class AIService {
         try {
             console.log("DEBUG: Preparing request to Grok (xAI)...");
 
+            // Get Provider at Runtime (Lazy Init)
+            const grokProvider = this.getProvider();
+            if (!grokProvider) {
+                throw new Error("Missing API Key (Checked GROK_API_KEY, AI_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY)");
+            }
+
             // Define the schema so Grok knows EXACTLY what to return
             const schema = z.object({
                 severity_score: z.number().min(0).max(100).describe("Skala keparahan luka dari 0 (ringan) sampai 100 (sangat parah)"),
@@ -54,7 +60,7 @@ class AIService {
 
             // Use the specific Vision model
             const result = await generateObject({
-                model: this.grok('grok-2-vision-1212'),
+                model: grokProvider('grok-2-vision-1212'),
                 schema: schema,
                 // prompt property removed to fix conflict with messages
                 messages: [
