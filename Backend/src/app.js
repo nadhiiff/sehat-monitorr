@@ -19,6 +19,9 @@ function createApp() {
   // --- TAMBAH MIDDLEWARE CORS ---
   // Mengizinkan request dari semua origin (hanya untuk pengembangan)
   app.use(cors());
+
+  // Ensure database table exists
+  db.initializeDatabase();
   // ------------------------------
 
   // Serve static files from 'uploads' directory
