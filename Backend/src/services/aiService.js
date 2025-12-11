@@ -47,7 +47,7 @@ class AIService {
             const result = await generateObject({
                 model: this.grok('grok-2-vision-1212'),
                 schema: schema,
-                prompt: "Analisis gambar luka ini. Berikan skor keparahan (severity_score) dalam rentang 0-100.",
+                // prompt property removed to fix conflict with messages
                 messages: [
                     {
                         role: 'user',
