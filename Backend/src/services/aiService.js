@@ -87,14 +87,16 @@ class AIService {
         } catch (err) {
             console.error("Google SDK Error:", err.message);
 
-            // KEY DEBUG: Reveal the length AND prefix (safe) to prove mismatch
+            // KEY DEBUG: Reveal the length AND prefix/suffix (safe) to prove mismatch
             const keyLength = this.apiKey ? this.apiKey.length : 0;
-            const keyPrefix = this.apiKey ? this.apiKey.substring(0, 5) + "..." : "undefined";
+            const keyPrefix = this.apiKey ? this.apiKey.substring(0, 5) : "undefined";
+            const keySuffix = this.apiKey ? this.apiKey.slice(-4) : "****";
 
             // Throw specific error for Controller to catch
-            throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix} (Length: ${keyLength})`);
+            throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix}...${keySuffix} (Length: ${keyLength})`);
         }
     }
 }
 
 module.exports = AIService;
+
