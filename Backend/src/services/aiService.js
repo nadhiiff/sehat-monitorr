@@ -13,28 +13,24 @@ class AIService {
     }
 
     constructor({ apiKey }) {
-        this.apiKey = apiKey;
-        // Trim potentially hidden whitespace from environment variables (Critical Fix for Vercel 404)
-        const cleanKey = this.apiKey ? this.apiKey.trim() : "";
+        // Constructor now just stores fallback, real init happens at runtime to be safe for Vercel
+        this.fallbackKey = apiKey;
+        console.log("DEBUG: AIService instantiated");
+    }
 
-        // Initialize the Official Google SDK
-        // This resolves the 404/403 errors by handling the authentication automatically
-        this.genAI = new GoogleGenerativeAI(cleanKey);
+    async getModel() {
+        // Runtime check for Env Var (safest for Serverless)
+        const runtimeKey = process.env.AI_API_KEY || this.fallbackKey;
+        const cleanKey = runtimeKey ? runtimeKey.trim() : "";
 
-        // DEBUG: List available models to see what is allowed
-        // This will print to Vercel logs if headers/auth fails
-        this.listModels();
+        const genAI = new GoogleGenerativeAI(cleanKey);
 
-        // Define the model with JSON configuration
-        // Switching back to 'gemini-1.5-flash'
-        // FIX: Force 'apiVersion: v1' because new AI Studio keys don't support v1beta
-        this.model = this.genAI.getGenerativeModel({
+        // Return model instance with v1 forced
+        return genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
         }, {
             apiVersion: "v1"
         });
-
-        console.log("DEBUG: Google AI SDK Initialized with gemini-1.5-flash (v1)");
     }
 
     async listModels() {
@@ -55,13 +51,17 @@ class AIService {
      * @returns {Promise<number|null>} Skor keparahan 0-100, atau null jika gagal.
      */
     async scoreWound(base64ImageData) {
+        let runtimeKey = "";
         try {
-            console.log("DEBUG: Preparing request with Google SDK...");
+            console.log("DEBUG: Preparing request with Google SDK (Runtime Init)...");
 
-            // Prompt for JSON output
+            // Re-fetch key for debug log
+            runtimeKey = process.env.AI_API_KEY || this.fallbackKey;
+
+            const model = await this.getModel();
+
             const prompt = "Berdasarkan gambar luka, berikan penilaian keparahan dalam skala 0 hingga 100. Berikan jawaban HANYA dalam format JSON dengan key 'severity_score'. Contoh: { \"severity_score\": 75 }";
 
-            // Prepare the image part
             const imagePart = {
                 inlineData: {
                     data: base64ImageData.data,
@@ -69,15 +69,12 @@ class AIService {
                 }
             };
 
-            // Call the API
-            const result = await this.model.generateContent([prompt, imagePart]);
+            const result = await model.generateContent([prompt, imagePart]);
             const response = await result.response;
             const text = response.text();
 
             console.log("DEBUG: Raw AI Response:", text);
 
-            // Clean up code blocks if present ( ```json ... ``` )
-            // The SDK usually handles this with responseMimeType, but safety first
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             const jsonResult = JSON.parse(cleanText);
 
@@ -90,12 +87,10 @@ class AIService {
         } catch (err) {
             console.error("Google SDK Error:", err.message);
 
-            // KEY DEBUG: Reveal the length AND prefix/suffix (safe) to prove mismatch
-            const keyLength = this.apiKey ? this.apiKey.length : 0;
-            const keyPrefix = this.apiKey ? this.apiKey.substring(0, 5) : "undefined";
-            const keySuffix = this.apiKey ? this.apiKey.slice(-4) : "****";
+            const keyLength = runtimeKey ? runtimeKey.length : 0;
+            const keyPrefix = runtimeKey ? runtimeKey.substring(0, 5) : "undefined";
+            const keySuffix = runtimeKey ? runtimeKey.slice(-4) : "****";
 
-            // Throw specific error for Controller to catch
             throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix}...${keySuffix} (Length: ${keyLength})`);
         }
     }

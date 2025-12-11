@@ -25,6 +25,19 @@ function createApp() {
   db.initializeDatabase();
   // ------------------------------
 
+  // --- DEBUG ROUTE (USER REQUESTED) ---
+  app.get('/api/debug-key', (req, res) => {
+    const key = process.env.AI_API_KEY;
+    return res.json({
+      status: 'ok',
+      keyLength: key ? key.length : 0,
+      keyPrefix: key ? key.substring(0, 5) : 'undefined',
+      keySuffix: key ? key.slice(-4) : 'undefined',
+      env: process.env.VERCEL_ENV || 'local'
+    });
+  });
+  // ------------------------------------
+
   // Serve static files
   // In Vercel, files are in /tmp. locally in ../uploads
   const uploadDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '../uploads');
