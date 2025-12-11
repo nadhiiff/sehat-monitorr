@@ -20,7 +20,7 @@ const makeReportController = ({ reportService }) => {
                 const usedKey = process.env.AI_API_KEY ? `${process.env.AI_API_KEY.substring(0, 8)}...` : 'undefined';
 
                 // Extract detailed message from Google if available
-                const googleError = err.response?.data?.error?.message || err.message;
+                const googleError = error.response?.data?.error?.message || error.message;
 
                 return res.status(403).json({
                     error: `Akses Ditolak (${googleError}). Key used: ${usedKey}.`
