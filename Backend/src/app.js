@@ -28,13 +28,14 @@ function createApp() {
   // --- DEBUG ROUTE (Active Probe - RAW REST) ---
   app.get('/api/debug-key', async (req, res) => {
     try {
+      // Use Global Fetch (Node 18+) OR Axios if available (safest fallback)
+      // Since we are debugging, let's use global fetch which Vercel supports
       const key = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
       if (!key) return res.json({ status: 'error', message: 'No Key Found' });
 
-      // Raw REST Call to bypass SDK version confusion
       const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key.trim()}`;
 
-      const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+      // Use global fetch
       const response = await fetch(url);
       const data = await response.json();
 
@@ -43,7 +44,8 @@ function createApp() {
         statusCode: response.status,
         keySuffix: key.slice(-4),
         models: data.models ? data.models.map(m => m.name) : [],
-        error: data.error
+        error: data.error,
+        debugNote: "Using Raw REST API Check"
       });
 
     } catch (error) {

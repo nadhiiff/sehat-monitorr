@@ -26,11 +26,10 @@ class AIService {
 
         const genAI = new GoogleGenerativeAI(cleanKey);
 
-        // Return model instance (Forcing v1 because key requires it)
+        // Return model instance (Trying specific alias 'latest' to fix resolution issues)
+        // Removed 'v1' force to let SDK decide (usually v1beta)
         return genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-        }, {
-            apiVersion: "v1"
+            model: "gemini-1.5-flash-latest",
         });
     }
 
