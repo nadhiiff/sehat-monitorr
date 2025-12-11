@@ -7,7 +7,9 @@ dotenv.config();
 // Pastikan DATABASE_URL ada di .env: postgresql://user:password@host:port/database
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    // Fix for "self-signed certificate in certificate chain" error
+    // Must set rejectUnauthorized: false for Supabase/Neon/Vercel Postgres
+    ssl: { rejectUnauthorized: false }
 });
 
 pool.on('connect', () => {
