@@ -3,18 +3,21 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 class AIService {
     constructor({ apiKey }) {
         this.apiKey = apiKey;
+        // Trim potentially hidden whitespace from environment variables (Critical Fix for Vercel 404)
+        const cleanKey = this.apiKey ? this.apiKey.trim() : "";
+
         // Initialize the Official Google SDK
         // This resolves the 404/403 errors by handling the authentication automatically
-        this.genAI = new GoogleGenerativeAI(this.apiKey);
-        
+        this.genAI = new GoogleGenerativeAI(cleanKey);
+
         // Define the model with JSON configuration
-        this.model = this.genAI.getGenerativeModel({ 
+        this.model = this.genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
             generationConfig: {
                 responseMimeType: "application/json"
             }
         });
-        
+
         console.log("DEBUG: Google AI SDK Initialized with gemini-1.5-flash");
     }
 
@@ -42,7 +45,7 @@ class AIService {
             const result = await this.model.generateContent([prompt, imagePart]);
             const response = await result.response;
             const text = response.text();
-            
+
             console.log("DEBUG: Raw AI Response:", text);
 
             // Clean up code blocks if present ( ```json ... ``` )
@@ -51,9 +54,9 @@ class AIService {
             const jsonResult = JSON.parse(cleanText);
 
             if (jsonResult.severity_score !== undefined) {
-                 return jsonResult.severity_score;
+                return jsonResult.severity_score;
             } else {
-                 throw new Error("Format JSON tidak sesuai: " + text);
+                throw new Error("Format JSON tidak sesuai: " + text);
             }
 
         } catch (err) {
