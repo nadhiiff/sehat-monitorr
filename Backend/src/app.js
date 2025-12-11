@@ -25,36 +25,32 @@ function createApp() {
   db.initializeDatabase();
   // ------------------------------
 
-  // --- DEBUG ROUTE (Active Probe) ---
+  // --- DEBUG ROUTE (Active Probe - RAW REST) ---
   app.get('/api/debug-key', async (req, res) => {
     try {
-      const { GoogleGenerativeAI } = require("@google/generative-ai");
       const key = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-
       if (!key) return res.json({ status: 'error', message: 'No Key Found' });
 
-      const genAI = new GoogleGenerativeAI(key.trim());
-      // Try standard model first
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // Raw REST Call to bypass SDK version confusion
+      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key.trim()}`;
 
-      const result = await model.generateContent("Hello Gemini, are you there?");
-      const response = await result.response;
-      const text = response.text();
+      const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+      const response = await fetch(url);
+      const data = await response.json();
 
       return res.json({
-        status: 'success',
+        status: response.ok ? 'success' : 'failed',
+        statusCode: response.status,
         keySuffix: key.slice(-4),
-        model: "gemini-1.5-flash",
-        apiVersion: "default (v1beta)",
-        response: text
+        models: data.models ? data.models.map(m => m.name) : [],
+        error: data.error
       });
 
     } catch (error) {
       return res.json({
         status: 'failed',
         error: error.message,
-        stack: error.stack,
-        keySuffix: (process.env.AI_API_KEY || process.env.GEMINI_API_KEY || "none").slice(-4)
+        stack: error.stack
       });
     }
   });
