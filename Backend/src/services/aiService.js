@@ -4,25 +4,34 @@ const { z } = require('zod');
 
 class AIService {
     constructor({ apiKey }) {
-        // Fallback to process.env if apiKey is not passed directly
-        // We check GROK_API_KEY (preferred), then AI_API_KEY (legacy), then GOOGLE_API_KEY (legacy)
-        this.apiKey = apiKey || process.env.GROK_API_KEY || process.env.AI_API_KEY || process.env.GOOGLE_API_KEY;
+        // Just store the constructor argument, don't read env yet
+        this.fallbackKey = apiKey;
+        console.log("DEBUG: AIService instantiated");
+    }
 
-        if (!this.apiKey) {
-            console.warn("WARN: No API Key found for AIService (Grok).");
+    /**
+     * Helper to get the provider at runtime
+     */
+    getProvider() {
+        // Runtime check for Env Vars (Safest for Vercel)
+        // Check ALL possible names including the old GEMINI one and standard OPENAI
+        const key = this.fallbackKey ||
+            process.env.GROK_API_KEY ||
+            process.env.AI_API_KEY ||
+            process.env.GEMINI_API_KEY ||
+            process.env.OPENAI_API_KEY ||
+            process.env.GOOGLE_API_KEY;
+
+        if (!key) {
+            console.error("CRITICAL: No API Key found in any known variable.");
+            return null;
         }
 
-        // Initialize xAI (Grok) provider
-        // xAI is compatible with OpenAI SDK
-        const openai = createOpenAI({
+        return createOpenAI({
             name: 'xai',
             baseURL: 'https://api.x.ai/v1',
-            apiKey: this.apiKey,
+            apiKey: key,
         });
-
-        this.grok = openai;
-
-        console.log("DEBUG: AIService (Grok/xAI) instantiated.");
     }
 
     /**
