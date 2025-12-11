@@ -3,7 +3,7 @@ const { handleWoundUpload } = require('../middleware/uploadMiddleware');
 const multer = require('multer');
 
 
-const uploadDir = process.env.UPLOAD_DIR || './uploads';
+const uploadDir = process.env.VERCEL ? '/tmp' : (process.env.UPLOAD_DIR || './uploads');
 
 const fullReportUpload = multer({ dest: uploadDir }).fields([
     { name: 'bukti_pendukung', maxCount: 1 },
