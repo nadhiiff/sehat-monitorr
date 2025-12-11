@@ -16,9 +16,15 @@ const makeReportController = ({ reportService }) => {
 
             // Tangani error API Key (403)
             if (statusCode === 403 || errorMessage.includes('API Key')) {
-                // DEBUG: Show which key is being used (masked)
+                // DEBUG: Show which key is being used (masked) AND the real error
                 const usedKey = process.env.AI_API_KEY ? `${process.env.AI_API_KEY.substring(0, 8)}...` : 'undefined';
-                return res.status(403).json({ error: `Akses Ditolak. Key yang digunakan server: ${usedKey}. Pastikan Key ini benar.` });
+
+                // Extract detailed message from Google if available
+                const googleError = err.response?.data?.error?.message || err.message;
+
+                return res.status(403).json({
+                    error: `Akses Ditolak (${googleError}). Key used: ${usedKey}.`
+                });
             }
         } else if (errorMessage.includes('ENOENT') || errorMessage.includes('no such file')) {
             statusCode = 400;

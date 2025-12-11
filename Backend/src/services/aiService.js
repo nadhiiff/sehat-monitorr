@@ -13,10 +13,8 @@ class AIService {
      * @returns {Promise<number|null>} Skor keparahan 0-100, atau null jika gagal.
      */
     async scoreWound(base64ImageData) {
-        // PERBAIKAN: Gunakan URL hardcoded untuk memastikan tidak ada kesalahan config di Vercel
-        const validUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-        const url = `${validUrl}?key=${this.apiKey}`;
-        console.log("DEBUG: Using Hardcoded Gemini URL:", validUrl);
+        // Reverting to use Environment Variables after testing
+        const url = `${this.apiUrl}?key=${this.apiKey}`;
 
         const requestSchema = {
             type: "object",
