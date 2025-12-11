@@ -1,98 +1,75 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { createOpenAI } = require('@ai-sdk/openai');
+const { generateObject } = require('ai');
+const { z } = require('zod');
 
 class AIService {
-    async listModels() {
-        try {
-            console.log("DEBUG: Listing available models...");
-            const modelResponse = await this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            // Note: SDK doesn't have direct listModels on instance, usually strictly via API/Manager
-            // We'll skip complex listing for now and just focus on model switch safety.
-        } catch (e) {
-            console.error("DEBUG: List Models failed", e.message);
-        }
-    }
-
     constructor({ apiKey }) {
-        // Constructor now just stores fallback, real init happens at runtime to be safe for Vercel
-        this.fallbackKey = apiKey;
-        console.log("DEBUG: AIService instantiated");
-    }
+        // Fallback to process.env if apiKey is not passed directly
+        // We check GROK_API_KEY (preferred), then AI_API_KEY (legacy), then GOOGLE_API_KEY (legacy)
+        this.apiKey = apiKey || process.env.GROK_API_KEY || process.env.AI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    async getModel() {
-        // Runtime check for Env Var (safest for Serverless)
-        // CHECK ALL POSSIBLE NAMES: Users often mix up AI_API_KEY vs GEMINI_API_KEY
-        const runtimeKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || this.fallbackKey;
-        const cleanKey = runtimeKey ? runtimeKey.trim() : "";
-
-        const genAI = new GoogleGenerativeAI(cleanKey);
-
-        // Return model instance (Trying specific alias 'latest' to fix resolution issues)
-        // Removed 'v1' force to let SDK decide (usually v1beta)
-        return genAI.getGenerativeModel({
-            model: "gemini-1.5-flash-latest",
-        });
-    }
-
-    async listModels() {
-        try {
-            const models = await this.genAI.listModels();
-            console.log("DEBUG: Available Gemini Models:");
-            for (const model of models) {
-                console.log(`- ${model.name}`);
-            }
-        } catch (error) {
-            console.error("DEBUG: Error listing models:", error.message);
+        if (!this.apiKey) {
+            console.warn("WARN: No API Key found for AIService (Grok).");
         }
+
+        // Initialize xAI (Grok) provider
+        // xAI is compatible with OpenAI SDK
+        const openai = createOpenAI({
+            name: 'xai',
+            baseURL: 'https://api.x.ai/v1',
+            apiKey: this.apiKey,
+        });
+
+        this.grok = openai;
+
+        console.log("DEBUG: AIService (Grok/xAI) instantiated.");
     }
 
     /**
-     * Menilai tingkat keparahan luka dari gambar Base64 menggunakan Gemini.
+     * Menilai tingkat keparahan luka dari gambar Base64 menggunakan Grok.
      * @param {object} base64ImageData - Objek yang berisi { data: base64String, mimeType: string }
      * @returns {Promise<number|null>} Skor keparahan 0-100, atau null jika gagal.
      */
     async scoreWound(base64ImageData) {
-        let runtimeKey = "";
         try {
-            console.log("DEBUG: Preparing request with Google SDK (Runtime Init)...");
+            console.log("DEBUG: Preparing request to Grok (xAI)...");
 
-            // Re-fetch key for debug log (MATCHING getModel LOGIC)
-            runtimeKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || this.fallbackKey;
+            // Define the schema so Grok knows EXACTLY what to return
+            const schema = z.object({
+                severity_score: z.number().min(0).max(100).describe("Skala keparahan luka dari 0 (ringan) sampai 100 (sangat parah)"),
+                reasoning: z.string().describe("Alasan singkat penilaian (maks 1 kalimat)")
+            });
 
-            const model = await this.getModel();
+            // Convert base64 to data URL format
+            const dataUrl = `data:${base64ImageData.mimeType};base64,${base64ImageData.data}`;
 
-            const prompt = "Berdasarkan gambar luka, berikan penilaian keparahan dalam skala 0 hingga 100. Berikan jawaban HANYA dalam format JSON dengan key 'severity_score'. Contoh: { \"severity_score\": 75 }";
+            // Use the specific Vision model
+            const result = await generateObject({
+                model: this.grok('grok-2-vision-1212'),
+                schema: schema,
+                prompt: "Analisis gambar luka ini. Berikan skor keparahan (severity_score) dalam rentang 0-100.",
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'text', text: "Analisis gambar luka ini. Berikan skor keparahan (severity_score) dalam rentang 0-100." },
+                            { type: 'image', image: dataUrl }
+                        ]
+                    }
+                ]
+            });
 
-            const imagePart = {
-                inlineData: {
-                    data: base64ImageData.data,
-                    mimeType: base64ImageData.mimeType
-                }
-            };
-
-            const result = await model.generateContent([prompt, imagePart]);
-            const response = await result.response;
-            const text = response.text();
-
-            console.log("DEBUG: Raw AI Response:", text);
-
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonResult = JSON.parse(cleanText);
-
-            if (jsonResult.severity_score !== undefined) {
-                return jsonResult.severity_score;
-            } else {
-                throw new Error("Format JSON tidak sesuai: " + text);
-            }
+            console.log("DEBUG: Grok Response:", result.object);
+            return result.object.severity_score;
 
         } catch (err) {
-            // KEY DEBUG: Reveal the length AND prefix/suffix (safe) to prove mismatch
-            const keyLength = runtimeKey ? runtimeKey.length : 0;
-            const keyPrefix = runtimeKey ? runtimeKey.substring(0, 5) : "undefined";
-            const keySuffix = runtimeKey ? runtimeKey.slice(-4) : "****";
+            console.error("Grok AI Error:", err.message);
 
-            const debugMsg = `AI_API_KEY: ${process.env.AI_API_KEY ? 'Set' : 'Unset'}, GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? 'Set' : 'Unset'}`;
+            // Safe Key Logging
+            const keyUsed = this.apiKey;
+            const suffix = keyUsed ? keyUsed.slice(-4) : "undefined";
 
-            throw new Error(`AI Service Failed (${err.message}). Key Used: ${keyPrefix}...${keySuffix} (Length: ${keyLength}). [Env Debug: ${debugMsg}]`);
+            throw new Error(`AI Service Failed (Grok): ${err.message}. Key Suffix: ${suffix}`);
         }
     }
 }
