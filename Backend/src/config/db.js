@@ -5,8 +5,11 @@ dotenv.config();
 
 // Konfigurasi koneksi database PostgreSQL
 // Pastikan DATABASE_URL ada di .env: postgresql://user:password@host:port/database
+// Fix for SSL error: strip query params (like sslmode=require) that might conflict with our config
+const connectionString = process.env.DATABASE_URL ? process.env.DATABASE_URL.split('?')[0] : process.env.DATABASE_URL;
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: connectionString,
     // Fix for "self-signed certificate in certificate chain" error
     // Must set rejectUnauthorized: false for Supabase/Neon/Vercel Postgres
     ssl: { rejectUnauthorized: false }
