@@ -10,8 +10,9 @@ class AIService {
     getKey() {
         // Consolidated search for Any Valid Key
         const key = this.fallbackKey ||
-            process.env.AI_API_KEY ||      // Preferred for OpenRouter
-            process.env.GROK_API_KEY ||    // Legacy support
+            process.env.OPENROUTER_API_KEY || // Added as primary support
+            process.env.AI_API_KEY ||
+            process.env.GROK_API_KEY ||
             process.env.OPENAI_API_KEY ||
             process.env.GEMINI_API_KEY ||
             process.env.GOOGLE_API_KEY;
